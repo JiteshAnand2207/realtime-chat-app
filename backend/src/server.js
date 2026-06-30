@@ -1,8 +1,11 @@
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
+import connectDB from "./config/db.js";
 
 dotenv.config();
+
+connectDB();
 
 const app = express();
 
@@ -11,6 +14,13 @@ app.use(express.json());
 
 app.get("/", (req, res) => {
   res.send("Real-Time Chat App Backend is running...");
+});
+
+app.get("/api/health", (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "Backend and MongoDB setup successful",
+  });
 });
 
 const PORT = process.env.PORT || 5000;
