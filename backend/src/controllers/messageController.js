@@ -70,6 +70,13 @@ export const sendMessage = async (req, res) => {
       message,
     });
 
+    const io = req.app.get("io");
+    const userSocketMap = io.userSocketMap;
+
+    if (userSocketMap && userSocketMap[receiverId]) {
+      io.to(userSocketMap[receiverId]).emit("newMessage", newMessage);
+    }
+
     return res.status(201).json({
       success: true,
       message: "Message sent successfully",
