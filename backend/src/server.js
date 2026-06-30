@@ -2,6 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import connectDB from "./config/db.js";
+import authRoutes from "./routes/authRoutes.js";
 
 dotenv.config();
 
@@ -15,6 +16,8 @@ app.use(express.json());
 app.get("/", (req, res) => {
   res.send("Real-Time Chat App Backend is running...");
 });
+
+app.use("/api/auth", authRoutes);
 
 app.get("/api/health", (req, res) => {
   res.status(200).json({
