@@ -18,7 +18,7 @@ const app = express();
 const allowedOrigins = [
   "http://localhost:5173",
   process.env.FRONTEND_URL,
-];
+].filter(Boolean);
 
 const server = http.createServer(app);
 
@@ -55,7 +55,6 @@ app.get("/api/health", (req, res) => {
 });
 
 const userSocketMap = {};
-
 io.userSocketMap = userSocketMap;
 
 io.on("connection", (socket) => {

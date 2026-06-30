@@ -12,27 +12,41 @@ export const SocketProvider = ({ children }) => {
 
   useEffect(() => {
     if (user) {
-      const newSocket = io(import.meta.env.VITE_SOCKET_URL, {
+      const socketUrl = import.meta.env.VITE_SOCKET_URL;
+
+      console.log("Connecting socket to:", socketUrl);
+
+      const newSocket = io(socketUrl, {
         query: {
           userId: user.id,
         },
+        transports: ["websocket", "polling"],
+      });
+
+      newSocket.on("connect", () => {
+        console.log("Socket connected:", newSocket.id);
+      });
+
+      newSocket.on("connect_error", (error) => {
+        console.log("Socket connection error:", error.message);
+      });
+
+      newSocket.on("getOnlineUsers", (users) => {
+        console.log("Online users:", users);
+        setOnlineUsers(users);
       });
 
       setSocket(newSocket);
-
-      newSocket.on("getOnlineUsers", (users) => {
-        setOnlineUsers(users);
-      });
 
       return () => {
         newSocket.close();
         setSocket(null);
       };
-    } else {
-      if (socket) {
-        socket.close();
-        setSocket(null);
-      }
+    }
+
+    if (socket) {
+      socket.close();
+      setSocket(null);
     }
   }, [user]);
 

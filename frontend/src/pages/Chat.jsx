@@ -15,6 +15,7 @@ const Chat = () => {
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [error, setError] = useState("");
+  const [showSidebar, setShowSidebar] = useState(false);
 
   const messagesEndRef = useRef(null);
 
@@ -27,7 +28,7 @@ const Chat = () => {
 
       setUsers(data.users);
 
-      if (data.users.length > 0) {
+      if (data.users.length > 0 && !selectedUser) {
         setSelectedUser(data.users[0]);
       }
     } catch (error) {
@@ -50,6 +51,11 @@ const Chat = () => {
     } finally {
       setLoadingMessages(false);
     }
+  };
+
+  const handleSelectUser = (chatUser) => {
+    setSelectedUser(chatUser);
+    setShowSidebar(false);
   };
 
   const handleSendMessage = async (e) => {
@@ -83,11 +89,15 @@ const Chat = () => {
     if (!socket) return;
 
     const handleNewMessage = (message) => {
-      if (
+      const senderId = message.senderId?.toString();
+      const receiverId = message.receiverId?.toString();
+
+      const isCurrentChat =
         selectedUser &&
-        message.senderId === selectedUser._id &&
-        message.receiverId === user.id
-      ) {
+        senderId === selectedUser._id?.toString() &&
+        receiverId === user.id?.toString();
+
+      if (isCurrentChat) {
         setMessages((prev) => [...prev, message]);
       }
     };
@@ -103,67 +113,92 @@ const Chat = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  return (
-    <main className="chat-page">
-      <aside className="chat-sidebar">
-        <div className="sidebar-profile">
-          <span className="avatar">
-            {user?.name?.charAt(0).toUpperCase()}
-          </span>
+  const renderSidebar = () => (
+    <aside className={`chat-sidebar ${showSidebar ? "show-sidebar" : ""}`}>
+      <div className="sidebar-profile">
+        <span className="avatar">{user?.name?.charAt(0).toUpperCase()}</span>
 
-          <div>
-            <h4>{user?.name}</h4>
-            <p>Logged in</p>
-          </div>
+        <div>
+          <h4>{user?.name}</h4>
+          <p>Logged in</p>
         </div>
+      </div>
 
+      <div className="sidebar-title-row">
         <h3>Chats</h3>
 
-        {loadingUsers && <p className="sidebar-message">Loading users...</p>}
+        <button
+          className="close-sidebar-btn"
+          onClick={() => setShowSidebar(false)}
+        >
+          ✕
+        </button>
+      </div>
 
-        {error && <p className="sidebar-error">{error}</p>}
+      {loadingUsers && <p className="sidebar-message">Loading users...</p>}
 
-        {!loadingUsers && users.length === 0 && (
-          <p className="sidebar-message">
-            No users found. Register another account to start chatting.
-          </p>
-        )}
+      {error && <p className="sidebar-error">{error}</p>}
 
-        {users.map((chatUser) => {
-          const isOnline = onlineUsers.includes(chatUser._id?.toString());
+      {!loadingUsers && users.length === 0 && (
+        <p className="sidebar-message">
+          No users found. Register another account to start chatting.
+        </p>
+      )}
 
-          return (
-            <div
-              key={chatUser._id}
-              className={`user-card ${
-                selectedUser?._id === chatUser._id ? "active" : ""
-              }`}
-              onClick={() => setSelectedUser(chatUser)}
-            >
-              <span className="avatar online-avatar-wrap">
-                {chatUser.name?.charAt(0).toUpperCase()}
-                {isOnline && <span className="online-dot"></span>}
-              </span>
+      {users.map((chatUser) => {
+        const isOnline = onlineUsers.includes(chatUser._id?.toString());
 
-              <div>
-                <h4>{chatUser.name}</h4>
-                <p>{isOnline ? "Online" : "Offline"}</p>
-              </div>
+        return (
+          <div
+            key={chatUser._id}
+            className={`user-card ${
+              selectedUser?._id === chatUser._id ? "active" : ""
+            }`}
+            onClick={() => handleSelectUser(chatUser)}
+          >
+            <span className="avatar online-avatar-wrap">
+              {chatUser.name?.charAt(0).toUpperCase()}
+              {isOnline && <span className="online-dot"></span>}
+            </span>
+
+            <div>
+              <h4>{chatUser.name}</h4>
+              <p>{isOnline ? "Online" : "Offline"}</p>
             </div>
-          );
-        })}
-      </aside>
+          </div>
+        );
+      })}
+    </aside>
+  );
+
+  return (
+    <main className="chat-page">
+      {showSidebar && (
+        <div
+          className="sidebar-backdrop"
+          onClick={() => setShowSidebar(false)}
+        ></div>
+      )}
+
+      {renderSidebar()}
 
       <section className="chat-box">
         {selectedUser ? (
           <>
             <header className="chat-header">
+              <button
+                className="all-chats-btn"
+                onClick={() => setShowSidebar(true)}
+              >
+                All Chats
+              </button>
+
               <div>
                 <h3>{selectedUser.name}</h3>
                 <p>
                   {onlineUsers.includes(selectedUser._id?.toString())
-  ? "Online"
-  : selectedUser.email}
+                    ? "Online"
+                    : selectedUser.email}
                 </p>
               </div>
             </header>
@@ -183,7 +218,9 @@ const Chat = () => {
                   <div
                     key={msg._id}
                     className={`message ${
-                      msg.senderId === user?.id ? "sent" : "received"
+                      msg.senderId?.toString() === user?.id?.toString()
+                        ? "sent"
+                        : "received"
                     }`}
                   >
                     {msg.message}
@@ -207,6 +244,13 @@ const Chat = () => {
           </>
         ) : (
           <div className="no-chat-selected">
+            <button
+              className="all-chats-btn mobile-center-btn"
+              onClick={() => setShowSidebar(true)}
+            >
+              All Chats
+            </button>
+
             <h2>No chat selected</h2>
             <p>Select a user from the sidebar to start chatting.</p>
           </div>
