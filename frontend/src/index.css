@@ -322,3 +322,46 @@ input:disabled {
   opacity: 0.65;
   cursor: not-allowed;
 }
+
+.sidebar-profile {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  border-radius: 16px;
+  background: #020617;
+  border: 1px solid #1e293b;
+  margin-bottom: 24px;
+}
+
+.sidebar-profile p,
+.sidebar-message {
+  color: #94a3b8;
+  font-size: 0.9rem;
+}
+
+.sidebar-error {
+  color: #fecaca;
+  background: #7f1d1d;
+  border: 1px solid #ef4444;
+  padding: 10px;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  margin-bottom: 12px;
+}
+
+.empty-chat,
+.no-chat-selected {
+  height: 100%;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  color: #94a3b8;
+  padding: 24px;
+}
+
+.empty-chat h2,
+.no-chat-selected h2 {
+  color: #e5e7eb;
+  margin-bottom: 10px;
+}
