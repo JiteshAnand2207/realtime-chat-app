@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import API from "../api/axios";
 import { useAuth } from "../context/AuthContext";
 
@@ -7,8 +7,14 @@ const Chat = () => {
 
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [messages, setMessages] = useState([]);
+
+  const [newMessage, setNewMessage] = useState("");
   const [loadingUsers, setLoadingUsers] = useState(true);
+  const [loadingMessages, setLoadingMessages] = useState(false);
   const [error, setError] = useState("");
+
+  const messagesEndRef = useRef(null);
 
   const fetchUsers = async () => {
     try {
@@ -29,9 +35,50 @@ const Chat = () => {
     }
   };
 
+  const fetchMessages = async (chatUserId) => {
+    try {
+      setLoadingMessages(true);
+
+      const { data } = await API.get(`/messages/${chatUserId}`);
+
+      setMessages(data.messages);
+    } catch (error) {
+      setError(error.response?.data?.message || "Failed to load messages");
+    } finally {
+      setLoadingMessages(false);
+    }
+  };
+
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+
+    if (!newMessage.trim() || !selectedUser) return;
+
+    try {
+      const { data } = await API.post(`/messages/send/${selectedUser._id}`, {
+        message: newMessage,
+      });
+
+      setMessages((prev) => [...prev, data.data]);
+      setNewMessage("");
+    } catch (error) {
+      setError(error.response?.data?.message || "Failed to send message");
+    }
+  };
+
   useEffect(() => {
     fetchUsers();
   }, []);
+
+  useEffect(() => {
+    if (selectedUser) {
+      fetchMessages(selectedUser._id);
+    }
+  }, [selectedUser]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   return (
     <main className="chat-page">
@@ -90,24 +137,40 @@ const Chat = () => {
             </header>
 
             <div className="messages-area">
-              <div className="empty-chat">
-                <h2>Conversation with {selectedUser.name}</h2>
-                <p>
-                  Message APIs and real-time Socket.io connection will be added
-                  in the next phases.
-                </p>
-              </div>
+              {loadingMessages ? (
+                <div className="empty-chat">
+                  <h2>Loading messages...</h2>
+                </div>
+              ) : messages.length === 0 ? (
+                <div className="empty-chat">
+                  <h2>No messages yet</h2>
+                  <p>Send the first message to {selectedUser.name}.</p>
+                </div>
+              ) : (
+                messages.map((msg) => (
+                  <div
+                    key={msg._id}
+                    className={`message ${
+                      msg.senderId === user?.id ? "sent" : "received"
+                    }`}
+                  >
+                    {msg.message}
+                  </div>
+                ))
+              )}
+
+              <div ref={messagesEndRef} />
             </div>
 
-            <form className="message-form">
+            <form className="message-form" onSubmit={handleSendMessage}>
               <input
                 type="text"
-                placeholder="Messaging comes in next phase..."
-                disabled
+                placeholder={`Message ${selectedUser.name}...`}
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
               />
-              <button type="submit" disabled>
-                Send
-              </button>
+
+              <button type="submit">Send</button>
             </form>
           </>
         ) : (
