@@ -365,3 +365,17 @@ input:disabled {
   color: #e5e7eb;
   margin-bottom: 10px;
 }
+.online-avatar-wrap {
+  position: relative;
+}
+
+.online-dot {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  height: 11px;
+  width: 11px;
+  border-radius: 50%;
+  background: #22c55e;
+  border: 2px solid #020617;
+}

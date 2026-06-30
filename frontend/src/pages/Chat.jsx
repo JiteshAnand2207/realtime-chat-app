@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import API from "../api/axios";
 import { useAuth } from "../context/AuthContext";
+import { useSocket } from "../context/SocketContext";
 
 const Chat = () => {
   const { user } = useAuth();
+  const { socket, onlineUsers } = useSocket();
 
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
@@ -38,6 +40,7 @@ const Chat = () => {
   const fetchMessages = async (chatUserId) => {
     try {
       setLoadingMessages(true);
+      setError("");
 
       const { data } = await API.get(`/messages/${chatUserId}`);
 
@@ -77,6 +80,26 @@ const Chat = () => {
   }, [selectedUser]);
 
   useEffect(() => {
+    if (!socket) return;
+
+    const handleNewMessage = (message) => {
+      if (
+        selectedUser &&
+        message.senderId === selectedUser._id &&
+        message.receiverId === user.id
+      ) {
+        setMessages((prev) => [...prev, message]);
+      }
+    };
+
+    socket.on("newMessage", handleNewMessage);
+
+    return () => {
+      socket.off("newMessage", handleNewMessage);
+    };
+  }, [socket, selectedUser, user]);
+
+  useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
@@ -106,24 +129,29 @@ const Chat = () => {
           </p>
         )}
 
-        {users.map((chatUser) => (
-          <div
-            key={chatUser._id}
-            className={`user-card ${
-              selectedUser?._id === chatUser._id ? "active" : ""
-            }`}
-            onClick={() => setSelectedUser(chatUser)}
-          >
-            <span className="avatar">
-              {chatUser.name?.charAt(0).toUpperCase()}
-            </span>
+        {users.map((chatUser) => {
+          const isOnline = onlineUsers.includes(chatUser._id?.toString());
 
-            <div>
-              <h4>{chatUser.name}</h4>
-              <p>{chatUser.email}</p>
+          return (
+            <div
+              key={chatUser._id}
+              className={`user-card ${
+                selectedUser?._id === chatUser._id ? "active" : ""
+              }`}
+              onClick={() => setSelectedUser(chatUser)}
+            >
+              <span className="avatar online-avatar-wrap">
+                {chatUser.name?.charAt(0).toUpperCase()}
+                {isOnline && <span className="online-dot"></span>}
+              </span>
+
+              <div>
+                <h4>{chatUser.name}</h4>
+                <p>{isOnline ? "Online" : "Offline"}</p>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </aside>
 
       <section className="chat-box">
@@ -132,7 +160,11 @@ const Chat = () => {
             <header className="chat-header">
               <div>
                 <h3>{selectedUser.name}</h3>
-                <p>{selectedUser.email}</p>
+                <p>
+                  {onlineUsers.includes(selectedUser._id?.toString())
+  ? "Online"
+  : selectedUser.email}
+                </p>
               </div>
             </header>
 

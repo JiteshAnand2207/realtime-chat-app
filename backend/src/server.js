@@ -15,16 +15,28 @@ connectDB();
 
 const app = express();
 
+const allowedOrigins = [
+  "http://localhost:5173",
+  process.env.FRONTEND_URL,
+];
+
 const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173",
+    origin: allowedOrigins,
     methods: ["GET", "POST"],
+    credentials: true,
   },
 });
 
-app.use(cors());
+app.use(
+  cors({
+    origin: allowedOrigins,
+    credentials: true,
+  })
+);
+
 app.use(express.json());
 
 app.get("/", (req, res) => {
@@ -43,6 +55,7 @@ app.get("/api/health", (req, res) => {
 });
 
 const userSocketMap = {};
+
 io.userSocketMap = userSocketMap;
 
 io.on("connection", (socket) => {
@@ -70,6 +83,7 @@ io.on("connection", (socket) => {
     io.emit("getOnlineUsers", Object.keys(userSocketMap));
   });
 });
+
 app.set("io", io);
 
 const PORT = process.env.PORT || 5000;
